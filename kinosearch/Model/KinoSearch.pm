@@ -61,19 +61,19 @@ class method ks($name, $language) {
 }
 
 class method import(%params) {
-   my $caller = caller;
+   my $caller = $params{'name'} || caller;
    my $fields = $params{'fields'};
    assert $fields, "no fields defined";
    
    #... init index
-   $class->init($caller, $fields);
+   $class->init($name, $fields);
 
    #... create model accessors
    # if (keys %{$params{'columns'}}) {
    #    my $fields = delete $fields{'fields'} || [];
    # 
    #    event->register(
-   #       'name' => "$caller-after-save",
+   #       'name' => "$name-after-save",
    #       'method' => class method($obj) {
    #          app::Model::KinoSearch->start_update;      
    #          app::Model::KinoSearch->delete(
@@ -91,7 +91,7 @@ class method import(%params) {
    #    );
    #
    #    event->register(
-   #       'name' => "$caller-after-delete",
+   #       'name' => "$name-after-delete",
    #       'method' => class method($obj) {
    #          app::Model::KinosSearch->delete(
    #             'id' => $obj->id,
@@ -100,7 +100,7 @@ class method import(%params) {
    #       },
    #    );
    #
-   #    WebTek::Util::make_method($caller, 'kinosearch', class method(%p) {
+   #    WebTek::Util::make_method($name, 'kinosearch', class method(%p) {
    #       my $q = $p{'query'} + " AND class:$class";
    #       my $r = app::Model::KinosSearch->search($q, $p{'offset'}, $p{'limit'});
    #       return [ map $class->new_default($_), @$r ];
