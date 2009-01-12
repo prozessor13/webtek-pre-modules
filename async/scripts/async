@@ -1,0 +1,56 @@
+#!/usr/local/bin/perl
+
+# do the async stuff of a webtek app
+
+use strict;
+
+#... check arguments
+unless ($ARGV[0] =~ /^start|stop|restart|check|status$/) {
+   print "this program runs asyncd of webtek apps'\n";
+   print "usage $0 <appname> start|stop|restart|status|check\n";
+   exit(1);
+}
+
+#... define constants
+my $cmd = "./webtek script modules/async/scripts/asyncd.pl";
+my $pid_file = "/var/run/async.pid";
+my $log_file = "/var/log/async.log";
+my $nice = "10"; # process priority (-20 highest, 19 lowest)
+
+#... start, stop, restart or check drmapd
+if ($ARGV[0] eq 'start') {
+   unless (-e $pid_file) { start() }
+   else { print "async allready running\n"; exit 1 }
+} elsif ($ARGV[0] eq 'stop') {
+   if (-e $pid_file) { stop() }
+   else { print "async not running\n"; exit 1 }
+} elsif ($ARGV[0] eq 'restart') {
+   stop() if -e $pid_file;
+   start();
+} elsif ($ARGV[1] eq 'check') {
+   my $pid = -e $pid_file && `cat $pid_file`;
+   unless ($pid and grep { /^$pid$/ } `ps -p $pid -o pid`) {
+      unlink $pid_file if -e $pid_file;
+      start();
+   };
+} else {
+   if (-e $pid_file) { print "async running\n" }
+   else { print "async not running\n" }
+}
+
+#... stop drmapd
+sub stop {
+   my $pid = `cat $pid_file` or die "cannot open pid-file $pid_file\n";
+   system("kill -9 $pid");
+   unlink $pid_file;
+   print "async stopped\n";
+}
+
+#... start drmapd
+sub start {
+   system(
+      "cd /WebTek/app/MapToolkit; nohup nice -n $nice sudo -u www-data " .
+      "$cmd >> $log_file 2>&1 &\n echo \$! > $pid_file"
+   );
+   print "async started\n";
+}
